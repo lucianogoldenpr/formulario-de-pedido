@@ -1,14 +1,13 @@
-
 import React from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  Save, 
-  Share2, 
-  FileSpreadsheet, 
-  FileText, 
-  Send, 
-  Mail, 
+import {
+  Plus,
+  Trash2,
+  Save,
+  Share2,
+  FileSpreadsheet,
+  FileText,
+  Send,
+  Mail,
   MessageCircle,
   ChevronLeft,
   Settings,
@@ -23,7 +22,8 @@ import {
   Briefcase,
   DollarSign,
   Gavel,
-  Pencil
+  Pencil,
+  Upload
 } from 'lucide-react';
 
 export const ICONS = {
@@ -49,7 +49,8 @@ export const ICONS = {
   Contacts: <Users size={18} />,
   Commercial: <Briefcase size={18} />,
   Finance: <DollarSign size={18} />,
-  Legal: <Gavel size={18} />
+  Legal: <Gavel size={18} />,
+  Upload: <Upload size={20} />
 };
 
 const emptyAddress = () => ({

@@ -6,8 +6,8 @@ import { Order } from '../types';
  * Configuração da conexão com o Supabase.
  */
 const getSupabaseClient = (): SupabaseClient | null => {
-  const supabaseUrl = (process.env as any).SUPABASE_URL || 'https://zoqofjswsotykjfwqucp.supabase.co';
-  const supabaseAnonKey = (process.env as any).SUPABASE_ANON_KEY || 'sb_publishable_MyOrm7en402Ox-5VgvEFZA_yLkvQ8jI';
+  const supabaseUrl = 'https://siomzsnbxetqhksfxtip.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpb216c25ieGV0cWhrc2Z4dGlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNDQ2OTUsImV4cCI6MjA4NTYyMDY5NX0.LkpdMc9-VKAuQiZ8MG4mgENGVvi7w3EDuQsIaqEWRuY';
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn('Supabase credentials missing.');
@@ -22,9 +22,78 @@ const getSupabaseClient = (): SupabaseClient | null => {
   }
 };
 
-const supabase = getSupabaseClient();
+export const supabase = getSupabaseClient();
+
+export interface AppUser {
+  email: string;
+  name: string;
+  role: 'admin' | 'user';
+}
 
 export const supabaseService = {
+  // --- SECURITY: REAL AUTHENTICATION ---
+
+  // Login Real
+  async signIn(email: string) {
+    if (!supabase) return { error: 'Supabase não inicializado' };
+
+    // Para simplificar, vamos usar Magic Link primeiro (mais seguro, sem senha)
+    // OU se preferir senha, usamos signInWithPassword.
+    // Vamos tentar senha primeiro, se falhar, avisamos.
+
+    // PRIMEIRO: Verifica se o usuário existe na tabela pública de perfis
+    // Isso é útil para verificar roles antes mesmo do Auth
+    const { data: profile } = await supabase
+      .from('app_users')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    return { profile };
+  },
+
+  // Auth Real (Login com Senha)
+  async signInWithPassword(email: string, password: string) {
+    if (!supabase) return { user: null, error: 'Supabase off' };
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { user: data.user, session: data.session, error };
+  },
+
+  // Logout Real
+  async signOut() {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+  },
+
+  // Pega usuário atual da sessão
+  async getCurrentSession() {
+    if (!supabase) return null;
+    const { data } = await supabase.auth.getSession();
+    return data.session;
+  },
+
+  // Cadastro de Novo Usuário (Apenas Admin pode criar ou via convite)
+  async signUp(email: string, password: string, name: string) {
+    if (!supabase) return { error: 'Supabase off' };
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name: name } // Salva nome no metadata
+      }
+    });
+
+    return { user: data.user, error };
+  },
+
+  async updateLastLogin(email: string) {
+    if (!supabase) return;
+    await supabase.from('app_users').update({ last_login: new Date() }).eq('email', email);
+  },
   async saveOrder(order: Order) {
     if (!supabase) {
       return { success: false, error: 'Conexão com o banco não inicializada.' };
@@ -45,7 +114,6 @@ export const supabaseService = {
           customer_document: order.customer.document,
           customer_phone: order.customer.phone,
           customer_email: order.customer.email,
-          customer_birthday: order.customer.birthday || null,
           billing_address: order.customer.billingAddress,
           collection_address: order.customer.collectionAddress,
           delivery_address: order.customer.deliveryAddress,
@@ -69,7 +137,8 @@ export const supabaseService = {
           bidding_date: order.biddingDate || null,
           commitment_number: order.commitmentNumber,
           commitment_date: order.commitmentDate || null,
-          notes: order.notes
+          notes: order.notes,
+          created_by: order.created_by || null
         });
 
       if (orderError) throw orderError;
@@ -103,8 +172,7 @@ export const supabaseService = {
           job_title: contact.jobTitle,
           department: contact.department,
           phone: contact.phone,
-          email: contact.email,
-          birthday: contact.birthday || null
+          email: contact.email
         }));
         const { error: contactsError } = await supabase.from('order_contacts').insert(contactsToInsert);
         if (contactsError) throw contactsError;
@@ -118,11 +186,11 @@ export const supabaseService = {
     }
   },
 
-  async fetchOrders() {
+  async fetchOrders(currentUserEmail?: string, isAdmin: boolean = false) {
     if (!supabase) return [];
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           *,
@@ -131,9 +199,15 @@ export const supabaseService = {
         `)
         .order('created_at', { ascending: false });
 
+      if (!isAdmin && currentUserEmail) {
+        query = query.eq('created_by', currentUserEmail);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
-      return data.map((dbOrder: any) => ({
+      return (data || []).map((dbOrder: any) => ({
         id: dbOrder.id,
         date: dbOrder.date,
         salesperson: dbOrder.salesperson,
@@ -145,7 +219,6 @@ export const supabaseService = {
           document: dbOrder.customer_document,
           phone: dbOrder.customer_phone,
           email: dbOrder.customer_email,
-          birthday: dbOrder.customer_birthday,
           billingAddress: dbOrder.billing_address,
           collectionAddress: dbOrder.collection_address,
           deliveryAddress: dbOrder.delivery_address
@@ -167,8 +240,7 @@ export const supabaseService = {
           jobTitle: c.job_title,
           department: c.department,
           phone: c.phone,
-          email: c.email,
-          birthday: c.birthday
+          email: c.email
         })),
         globalValue1: dbOrder.global_value_1,
         discountTotal: dbOrder.discount_total,
@@ -190,10 +262,16 @@ export const supabaseService = {
         biddingDate: dbOrder.bidding_date,
         commitmentNumber: dbOrder.commitment_number,
         commitmentDate: dbOrder.commitment_date,
-        notes: dbOrder.notes
+        notes: dbOrder.notes,
+        shippingCost: dbOrder.freight_value,
+        pdf_url: dbOrder.pdf_url,
+        pdf_generated_at: dbOrder.pdf_generated_at,
+        created_by: dbOrder.created_by,
+        created_at: dbOrder.created_at
       })) as Order[];
+
     } catch (error) {
-      console.error('Erro ao buscar do Supabase:', error);
+      console.error('Erro ao buscar pedidos:', error);
       return [];
     }
   },
@@ -208,5 +286,164 @@ export const supabaseService = {
       console.error('Erro ao excluir do Supabase:', error);
       return false;
     }
+  },
+
+  async uploadOrderPDF(orderId: string, pdfBlob: Blob) {
+    if (!supabase) return { success: false, error: 'Sem conexão Supabase' };
+
+    try {
+      const fileName = `${orderId}_${Date.now()}.pdf`;
+
+      // 1. Upload
+      const { error: uploadError } = await supabase.storage
+        .from('order-pdfs')
+        .upload(fileName, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('order-pdfs')
+        .getPublicUrl(fileName);
+
+      // 3. Update Order
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          pdf_url: publicUrl,
+          pdf_generated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (updateError) throw updateError;
+
+      return { success: true, url: publicUrl };
+    } catch (error: any) {
+      console.error("Erro upload PDF:", error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async saveAcceptanceLog(data: {
+    order_id: string;
+    customer_name: string;
+    customer_document: string;
+    signer_name: string;
+    signer_email: string;
+    signature_hash: string;
+    user_agent: string;
+    ip_address?: string;
+  }) {
+    if (!supabase) return null;
+
+    try {
+      const { data: inserted, error } = await supabase
+        .from('acceptance_logs')
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro Supabase Aceite:", error);
+        return null;
+      }
+      return inserted;
+    } catch (e) {
+      console.error("Erro ao salvar aceite:", e);
+      return null;
+    }
+  },
+
+  // --- GESTÃO DE USUÁRIOS ---
+
+  async fetchUsers() {
+    if (!supabase) return [];
+    try {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      return [];
+    }
+  },
+
+  async createUser(user: { email: string; name: string; role: 'admin' | 'user' }) {
+    if (!supabase) return { success: false, error: 'Sem conexão' };
+    try {
+      const { error } = await supabase
+        .from('app_users')
+        .insert([user]);
+
+      if (error) {
+        if (error.code === '23505') return { success: false, error: 'E-mail já cadastrado.' };
+        throw error;
+      }
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async deleteUser(email: string) {
+    if (!supabase) return { success: false, error: 'Sem conexão' };
+    try {
+      const { error } = await supabase
+        .from('app_users')
+        .delete()
+        .eq('email', email);
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async updateUser(originalEmail: string, updates: { name: string; role: 'admin' | 'user'; email?: string }) {
+    if (!supabase) return { success: false, error: 'Sem conexão' };
+    try {
+      // Se houver troca de email, é complexo pois envolve Auth. Vamos permitir apenas trocar Nome e Role por enquanto na tabela app_users.
+      // Se trocar o email aqui, perde o link com o Auth se não atualizar lá também.
+      // Por segurança, vamos bloquear alteração de email por enquanto ou assumir que o email é a chave.
+
+      const { error } = await supabase
+        .from('app_users')
+        .update({ name: updates.name, role: updates.role })
+        .eq('email', originalEmail);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  async createAuthUser(email: string, password: string) {
+    const supabaseUrl = 'https://siomzsnbxetqhksfxtip.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpb216c25ieGV0cWhrc2Z4dGlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNDQ2OTUsImV4cCI6MjA4NTYyMDY5NX0.LkpdMc9-VKAuQiZ8MG4mgENGVvi7w3EDuQsIaqEWRuY';
+
+    if (!supabaseUrl || !supabaseAnonKey) return { success: false, error: 'Credenciais ausentes' };
+
+    // Cria um cliente temporário para não afetar a sessão atual do Admin
+    const tempClient = createClient(supabaseUrl, supabaseAnonKey);
+
+    const { data, error } = await tempClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: email.split('@')[0], // Fallback name
+        }
+      }
+    });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, user: data.user };
   }
 };

@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-golden---controle-de-orçamentos",
+  "name": "golden-controle-orcamentos",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,20 +8,20 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "lucide-react": "^0.475.0",
-    "react-dom": "^19.0.0",
-    "react": "^19.0.0",
-    "jspdf": "^2.5.1",
-    "@google/genai": "^0.21.0",
-    "xlsx": "^0.18.5",
-    "jspdf-autotable": "^3.8.2",
-    "@supabase/supabase-js": "^2.45.4"
-  },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/node": "^25.0.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  },
+  "dependencies": {
+    "@google/genai": "^1.35.0",
+    "@supabase/supabase-js": "^2.90.1",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
+    "lucide-react": "^0.562.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5"
   }
 }

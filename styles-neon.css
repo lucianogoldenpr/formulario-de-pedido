@@ -1,0 +1,260 @@
+/* 
+  🎨 DESIGN COMMITMENT: GOLDEN OFFICIAL STANDARD (Slate Theme)
+  - Matches DASHBOARD_TV_OFICIAL exactly.
+  - Palette: Tailwind Slate (950/900/800).
+  - No weird neon, no absolute black. Professional Dashboard look.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    /* ================= LIGHT MODE (Padrão Limpo) ================= */
+    --bg-app: #F8FAFC;
+    /* Slate 50 */
+    --bg-panel: #FFFFFF;
+    --bg-input: #FFFFFF;
+    --bg-input-focus: #FFFFFF;
+
+    --color-primary: #2563EB;
+    /* Blue 600 */
+    --color-accent: #F59E0B;
+    /* Amber 500 */
+
+    --color-text-main: #0F172A;
+    /* Slate 900 */
+    --color-text-sub: #64748B;
+    /* Slate 500 */
+
+    --border-subtle: 1px solid #E2E8F0;
+    /* Slate 200 */
+    --border-focus: 4px rgba(37, 99, 235, 0.2);
+
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+
+    --font-main: 'Inter', sans-serif;
+}
+
+/* ================= DARK MODE (Golden Official) ================= */
+/* Baseado em DASHBOARD_TV_OFICIAL (Slate 950/900) */
+body.dark-mode {
+    --bg-app: #020617;
+    /* Slate 950 */
+    --bg-panel: #0F172A;
+    /* Slate 900 */
+    --bg-input: #1E293B;
+    /* Slate 800 */
+    --bg-input-focus: #334155;
+    /* Slate 700 */
+
+    --color-primary: #3B82F6;
+    /* Blue 500 */
+    --color-accent: #F59E0B;
+    /* Amber 500 */
+
+    --color-text-main: #F1F5F9;
+    /* Slate 100 */
+    --color-text-sub: #94A3B8;
+    /* Slate 400 */
+
+    --border-subtle: 1px solid #334155;
+    /* Slate 700 */
+    --border-focus: 4px rgba(59, 130, 246, 0.2);
+
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+}
+
+/* Aplicando Variáveis */
+
+body,
+html,
+#root {
+    background-color: var(--bg-app) !important;
+    color: var(--color-text-main);
+    font-family: var(--font-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Navbar */
+nav {
+    background-color: var(--bg-panel) !important;
+    border-bottom: var(--border-subtle) !important;
+    box-shadow: var(--shadow-card);
+}
+
+/* Cards e Contêineres */
+.bg-white,
+.card,
+.bg-slate-50,
+.bg-gray-50 {
+    background-color: var(--bg-panel) !important;
+    border: var(--border-subtle) !important;
+    box-shadow: var(--shadow-card) !important;
+    border-radius: 8px !important;
+    /* Padrão Dashboard */
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+    background-color: var(--bg-input) !important;
+    border: var(--border-subtle) !important;
+    color: var(--color-text-main) !important;
+    border-radius: 6px !important;
+    padding: 10px 12px !important;
+    transition: border-color 0.15s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: none !important;
+    /* Sem brilho */
+}
+
+/* Textos */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-bold,
+.font-black {
+    color: var(--color-text-main) !important;
+}
+
+p,
+span,
+label,
+.text-slate-500,
+.text-gray-500 {
+    color: var(--color-text-sub) !important;
+}
+
+/* Botões */
+button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    transition: opacity 0.15s ease;
+    box-shadow: none !important;
+    /* Remove qualquer sombra/brilho */
+}
+
+/* Botão Primário (Laranja Golden) */
+.bg-amber-600,
+.bg-orange-600 {
+    background-color: #EA580C !important;
+    /* Orange 600 */
+    color: white !important;
+    border: none !important;
+}
+
+.bg-amber-600:hover {
+    background-color: #C2410C !important;
+    /* Orange 700 */
+    opacity: 0.9;
+}
+
+/* Botão Secundário */
+.bg-slate-100,
+.bg-white.border {
+    background-color: var(--bg-input) !important;
+    border: var(--border-subtle) !important;
+    color: var(--color-text-main) !important;
+}
+
+.bg-slate-100:hover {
+    background-color: var(--bg-input-focus) !important;
+    border-color: var(--color-text-sub) !important;
+}
+
+/* Tabela */
+thead,
+.bg-gray-50 {
+    background-color: var(--bg-input) !important;
+}
+
+tr {
+    border-bottom: var(--border-subtle) !important;
+}
+
+td {
+    color: var(--color-text-main) !important;
+}
+
+/* =========================================
+   OVERRIDES CRÍTICOS (Correção de partes brancas)
+   ========================================= */
+
+/* Fundo da Página (O mais importante) */
+.min-h-screen {
+    background-color: var(--bg-app) !important;
+}
+
+/* Footer Sticky */
+.sticky.bottom-0,
+footer {
+    background-color: var(--bg-panel) !important;
+    border-top: var(--border-subtle) !important;
+}
+
+/* Inputs Readonly (Disabled looks) */
+input[readonly],
+input:disabled {
+    background-color: var(--bg-app) !important;
+    border-color: transparent !important;
+    opacity: 0.8;
+}
+
+/* Badges */
+.bg-emerald-50 {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    color: #10B981 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+.bg-amber-50 {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    color: #F59E0B !important;
+    border: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+.bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: #EF4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #3B82F6 !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #475569;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #64748B;
+}
+
+/* Remover Blurs decorativos se existirem */
+.blur-\[100px\],
+.blur-\[80px\] {
+    display: none !important;
+}

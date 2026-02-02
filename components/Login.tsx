@@ -1,96 +1,232 @@
 
 import React, { useState } from 'react';
-import { ICONS } from '../constants';
+import { supabaseService } from '../services/supabaseService';
 
 interface LoginProps {
-  onLogin: (email: string) => void;
+  onLogin: (session: any) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); // Nova validação
+  const [fullname, setFullname] = useState(''); // Para cadastro
+  const [isSignApp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const corporateDomain = '@goldenpr.com.br';
-    
-    if (!email.toLowerCase().endsWith(corporateDomain)) {
-      setError(`Utilize seu e-mail corporativo finalizado em ${corporateDomain}`);
-      return;
-    }
+    setLoading(true);
+    setError(null);
 
-    onLogin(email.trim().toLowerCase());
+    try {
+      if (isSignApp) {
+        // --- CADASTRO ---
+        if (!email.includes('@goldenpr.com.br')) {
+          setError('Apenas e-mails corporativos (@goldenpr.com.br) são permitidos.');
+          setLoading(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError('As senhas não coincidem. Por favor, verifique.');
+          setLoading(false);
+          return;
+        }
+
+        if (password.length < 6) {
+          setError('A senha deve ter pelo menos 6 caracteres.');
+          setLoading(false);
+          return;
+        }
+
+        const { user, error } = await supabaseService.signUp(email, password, fullname);
+
+        if (error) throw error;
+
+        if (user) {
+          // Tenta logar imediatamente (Funciona se "Confirm Email" estiver OFF no Supabase)
+          const { session } = await supabaseService.signInWithPassword(email, password);
+
+          if (session) {
+            onLogin(session);
+            return;
+          }
+
+          setSuccessMsg('Conta recebida! Se necessário, verifique seu e-mail para confirmar.');
+          setIsSignUp(false);
+        }
+      } else {
+        // --- LOGIN ---
+        const { session, error } = await supabaseService.signInWithPassword(email, password);
+
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('E-mail ou senha incorretos.');
+          }
+          throw error;
+        }
+
+        if (session) {
+          onLogin(session);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Ocorreu um erro. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 relative overflow-hidden">
-      {/* Background Decorative Elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] -mr-48 -mt-48" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] -ml-48 -mb-48" />
-      
-      <div className="w-full max-w-md p-8 relative z-10 animate-in fade-in zoom-in duration-500">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-          <div className="p-8 text-center bg-slate-50 border-b border-slate-100">
-            {/* Recreated Logo from Image */}
-            <div className="flex items-stretch h-14 rounded-xl overflow-hidden shadow-lg border border-slate-200 mx-auto w-fit mb-6">
-              <div className="bg-black px-5 flex items-center">
-                <span className="text-white font-serif text-3xl font-bold tracking-tight">Golden</span>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+      {/* Container Central Clean */}
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+
+        {/* Header com Logo */}
+        <div className="p-8 pb-6 border-b border-slate-100 dark:border-slate-800 text-center">
+          {/* Logo Oficial */}
+          {/* Logo Oficial (High Fidelity CSS) */}
+          <div className="flex justify-center mb-10 mt-2">
+            <div className="flex rounded-lg overflow-hidden shadow-2xl transform hover:scale-105 transition duration-500">
+              {/* Lado Esquerdo: Golden */}
+              <div className="bg-black px-6 py-3 flex items-center justify-center min-h-[50px]">
+                <span className="text-3xl tracking-wide" style={{
+                  fontFamily: '"Times New Roman", Times, serif',
+                  background: 'linear-gradient(to bottom, #FFF8DC 0%, #FFD700 40%, #B8860B 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.5))'
+                }}>
+                  Golden
+                </span>
               </div>
-              <div className="bg-gradient-to-br from-[#D4AF37] via-[#F9E27E] to-[#B8860B] px-4 flex flex-col justify-center leading-none">
-                <span className="text-black font-sans text-[10px] font-black tracking-tighter uppercase">Equipamentos</span>
-                <span className="text-black font-sans text-[13px] font-black tracking-tighter uppercase">Médicos</span>
+
+              {/* Lado Direito: Equipamentos Médicos */}
+              <div className="px-4 py-3 flex flex-col justify-center leading-none min-h-[50px]" style={{
+                background: 'linear-gradient(to right, #B8860B, #FFD700, #F0E68C)'
+              }}>
+                <span className="text-[10px] text-black tracking-[0.15em] font-normal uppercase whitespace-nowrap" style={{ fontFamily: 'sans-serif' }}>EQUIPAMENTOS</span>
+                <span className="text-[10px] text-black tracking-[0.15em] font-normal uppercase whitespace-nowrap mt-0.5" style={{ fontFamily: 'sans-serif' }}>MÉDICOS</span>
               </div>
             </div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">Portal do Vendedor</h2>
-            <p className="text-sm text-slate-400 font-medium mt-1">Identifique-se com seu e-mail corporativo</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
-                E-mail Corporativo
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
-                  {ICONS.Mail}
-                </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            {isSignApp ? 'Criar Nova Conta' : 'Acesse sua Conta'}
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            {isSignApp ? 'Preencha seus dados corporativos' : 'Sistema Golden de Formulário de Pedidos'}
+          </p>
+        </div>
+
+        {/* Formulário */}
+        <form onSubmit={handleLogin} className="p-8 pt-6 space-y-5">
+
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm p-3 rounded-lg border border-red-100 dark:border-red-800 font-medium animate-pulse">
+              {error}
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-sm p-3 rounded-lg border border-emerald-100 dark:border-emerald-800 font-medium">
+              {successMsg}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {isSignApp && (
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Nome Completo</label>
                 <input
-                  required
-                  type="email"
-                  className={`w-full pl-12 pr-4 py-4 bg-slate-50 border ${error ? 'border-red-500' : 'border-slate-100'} rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 outline-none transition-all font-bold text-slate-700`}
-                  placeholder="usuario@goldenpr.com.br"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (error) setError('');
-                  }}
+                  type="text"
+                  value={fullname}
+                  onChange={e => setFullname(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                  placeholder="Seu Nome"
+                  required={isSignApp}
                 />
               </div>
-              {error && (
-                <p className="text-[10px] text-red-500 font-bold px-2 animate-bounce">
-                  {error}
-                </p>
-              )}
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">E-mail Corporativo</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                placeholder="nome@goldenpr.com.br"
+                required
+              />
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-4 bg-slate-900 text-amber-400 font-black rounded-2xl shadow-xl shadow-slate-200 hover:bg-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
-            >
-              Acessar Sistema {ICONS.Send}
-            </button>
-          </form>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Senha</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
+            </div>
 
-          <div className="p-4 bg-slate-50 text-center border-t border-slate-100">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-              {ICONS.Legal} Golden Medical Systems v2.1
-            </p>
+            {isSignApp && (
+              <div className="animate-scaleIn pt-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Confirmar Senha</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className={`w-full bg-slate-50 dark:bg-slate-800 border rounded-lg px-4 py-3 text-slate-900 dark:text-slate-100 focus:ring-2 outline-none transition-all ${confirmPassword && password !== confirmPassword
+                    ? 'border-red-500 focus:ring-red-500'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-amber-500'
+                    }`}
+                  placeholder="Repita a senha"
+                  required
+                  minLength={6}
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-red-500 text-xs mt-1 ml-1 font-bold">As senhas não conferem</p>
+                )}
+              </div>
+            )}
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait mt-2"
+          >
+            {loading ? 'Processando...' : (isSignApp ? 'Cadastrar' : 'Entrar')}
+          </button>
+        </form>
+
+        {/* Footer Toggle */}
+        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 text-center border-t border-slate-100 dark:border-slate-800">
+          <p className="text-sm text-slate-500">
+            {isSignApp ? 'Já tem uma conta?' : 'Ainda não tem acesso?'}
+            <button
+              onClick={() => { setIsSignUp(!isSignApp); setError(null); }}
+              className="ml-2 font-bold text-amber-600 hover:text-amber-700 hover:underline"
+            >
+              {isSignApp ? 'Fazer Login' : 'Criar Conta'}
+            </button>
+          </p>
         </div>
-        
-        <p className="text-center mt-8 text-slate-500 text-xs font-medium">
-          Acesso exclusivo para funcionários @goldenpr.com.br
-        </p>
+
+      </div>
+
+      {/* Copyright Footer */}
+      <div className="absolute bottom-6 text-center w-full text-slate-500 text-xs opacity-60">
+        &copy; 2026 Golden Equipamentos Médicos - T.I
       </div>
     </div>
   );

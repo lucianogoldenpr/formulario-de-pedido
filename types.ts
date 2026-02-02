@@ -1,14 +1,14 @@
 
 export interface OrderItem {
   id: string;
-  code: string; 
+  code: string;
   ncm: string;
   description: string;
-  unit: string; 
+  unit: string;
   weight: number;
   quantity: number;
   unitPrice: number;
-  discount: number; 
+  discount: number;
   total: number;
 }
 
@@ -19,7 +19,6 @@ export interface Contact {
   department: string;
   phone: string;
   email: string;
-  birthday: string;
 }
 
 export interface Address {
@@ -34,7 +33,6 @@ export interface Address {
 
 export interface CustomerInfo {
   name: string;
-  birthday: string;
   document: string; // CNPJ / CPF
   rg: string;
   stateRegistration: string;
@@ -64,7 +62,7 @@ export interface Order {
   /** Contacts are optional to support simplified forms */
   contacts?: Contact[];
   items: OrderItem[];
-  
+
   // Totals & Currency (Made optional to support simplified budget forms)
   globalValue1?: number; // Sum of items
   discountTotal?: number;
@@ -77,6 +75,7 @@ export interface Order {
   // Commercial
   minBilling?: boolean;
   minBillingValue?: number;
+  downPayment?: number; // Valor de Entrada
   finalCustomer?: boolean;
   paymentTerms: string;
   deliveryTime: string;
@@ -99,4 +98,12 @@ export interface Order {
   paymentMethod?: string;
   shippingType?: 'CIF' | 'FOB';
   discountGlobal?: number;
+
+  // PDF Storage
+  pdf_url?: string; // URL do PDF salvo no Supabase Storage
+  pdf_generated_at?: string; // Data de geração do PDF
+
+  // User Tracking
+  created_by?: string; // Email do usuário que criou o pedido
+  created_at?: string; // Data/hora de criação (ISO string)
 }

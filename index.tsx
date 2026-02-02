@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// import './styles-neon.css'; // REMOVIDO PARA USAR TAILWIND PURO
 import App from './App';
 
 const rootElement = document.getElementById('root');

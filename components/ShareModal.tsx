@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { Order } from '../types';
 import { ICONS } from '../constants';
-import { exportToExcel, generatePDF, shareWhatsApp, shareEmail } from '../utils/exportUtils';
+import { exportToExcelWithTemplate, generatePDF, shareWhatsApp, shareEmail } from '../utils/exportUtils';
 import { generateSmartProposal } from '../services/geminiService';
+import ProposalAcceptance from './ProposalAcceptance'; // Componente de Aceite
 
 interface ShareModalProps {
   order: Order;
@@ -12,10 +13,44 @@ interface ShareModalProps {
 
 const ShareModal: React.FC<ShareModalProps> = ({ order, onClose }) => {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [showAcceptance, setShowAcceptance] = useState(false);
 
-  const handleDownloadPDF = () => {
-    const doc = generatePDF(order);
-    doc.save(`PEDIDO_${order.id}.pdf`);
+  const handleAcceptProposal = (signature: string, acceptanceDate: string) => {
+    console.log('Proposta aceita:', { signature, acceptanceDate, orderId: order.id });
+    // Aqui você pode salvar no banco de dados
+    // supabaseService.saveAcceptance(order.id, signature, acceptanceDate);
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const doc = await generatePDF(order);
+      const fileName = `PEDIDO_${order.id}_${Date.now()}.pdf`;
+
+      // Salva localmente
+      doc.save(fileName);
+
+      // Upload para Supabase Storage
+      try {
+        const pdfBlob = doc.output('blob');
+        const { storageService } = await import('../services/storageService');
+
+        const pdfUrl = await storageService.uploadPDF(pdfBlob, fileName);
+
+        if (pdfUrl) {
+          // Atualiza URL na tabela orders
+          await storageService.updateOrderPDFUrl(order.id, pdfUrl);
+          console.log('✅ PDF salvo no Supabase:', pdfUrl);
+        } else {
+          console.warn('⚠️ Falha ao salvar PDF no Supabase (salvo apenas localmente)');
+        }
+      } catch (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        // Continua mesmo se o upload falhar (PDF já foi baixado)
+      }
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF. Verifique o console para mais detalhes.');
+    }
   };
 
   const handleEmailWithAI = async () => {
@@ -38,8 +73,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ order, onClose }) => {
 
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => exportToExcel(order)}
+            <button
+              onClick={() => exportToExcelWithTemplate(order)}
               className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:bg-emerald-50 hover:border-emerald-100 transition group"
             >
               <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
@@ -47,7 +82,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ order, onClose }) => {
               </div>
               <span className="text-xs font-bold text-slate-700">Modelo XLSX</span>
             </button>
-            <button 
+            <button
               onClick={handleDownloadPDF}
               className="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-xl hover:bg-red-50 hover:border-red-100 transition group"
             >
@@ -61,24 +96,35 @@ const ShareModal: React.FC<ShareModalProps> = ({ order, onClose }) => {
           <div className="pt-4 border-t border-slate-50">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Ações Rápidas</h4>
             <div className="space-y-2">
-              <button 
+              <button
                 onClick={() => shareWhatsApp(order)}
                 className="w-full flex items-center gap-4 p-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition shadow-lg shadow-emerald-100"
               >
                 {ICONS.WhatsApp} Enviar para o Cliente
               </button>
-              <button 
+              <button
                 onClick={handleEmailWithAI}
                 disabled={isGeneratingAI}
                 className="w-full flex items-center gap-4 p-3 bg-blue-50 text-blue-700 border border-blue-100 rounded-xl font-bold hover:bg-blue-100 transition"
               >
                 {isGeneratingAI ? (
-                   <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                  <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
                 ) : (
                   <div className="flex items-center gap-2">
                     {ICONS.Mail} Email com Proposta IA {ICONS.AI}
                   </div>
                 )}
+              </button>
+
+              {/* Botão de Aceite de Proposta */}
+              <button
+                onClick={() => setShowAcceptance(true)}
+                className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl font-bold hover:from-emerald-700 hover:to-emerald-600 transition shadow-lg mt-4"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Enviar para Aceite do Cliente
               </button>
             </div>
           </div>
@@ -88,6 +134,15 @@ const ShareModal: React.FC<ShareModalProps> = ({ order, onClose }) => {
           <p className="text-[10px] text-slate-400 uppercase font-bold">Pedido confirmado e pronto para processamento</p>
         </div>
       </div>
+
+      {/* Modal de Aceite */}
+      {showAcceptance && (
+        <ProposalAcceptance
+          order={order}
+          onClose={() => setShowAcceptance(false)}
+          onAccept={handleAcceptProposal}
+        />
+      )}
     </div>
   );
 };
