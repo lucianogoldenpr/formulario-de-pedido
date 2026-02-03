@@ -1,20 +1,84 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 📦 Golden - Controle de Pedidos
 
-# Run and deploy your AI Studio app
+> **Status:** ✅ Produção | **Versão:** 1.5.0 (2026-02-03)
+>
+> Sistema especializado para criação, gestão e arquivamento de pedidos da Golden Equipamentos Médicos.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/drive/1jfgigAVzmfd-8r6n2oN9kDjmAeKFK7M_
+## 🚀 O que há de novo? (Sessão Atual)
 
-## Run Locally
+Nesta última atualização, transformamos o sistema de um simples formulário para uma plataforma completa de gestão:
 
-**Prerequisites:**  Node.js
+- ✅ **Geração Automática de PDF:** O sistema agora cria o documento oficial no exato momento do salvamento.
+- ✅ **Cloud Archiving:** Integração real com **Supabase Storage** para arquivar PDFs permanentemente.
+- ✅ **Controle de Acesso (RBAC):** Diferenciação entre Admins e Vendedores.
+- ✅ **Privacidade de Dados:** Vendedores agora possuem visão restrita apenas aos seus próprios pedidos.
+- ✅ **Gestão de Usuários:** Interface administrativa para criar e gerenciar acessos e senhas.
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🎨 Design System: Cyber-Medical Brutalist
+
+O projeto segue o **Golden Design System (GDS)**:
+
+- **Estética:** Bordas afiadas, alto contraste, tipografia técnica.
+- **Paleta:** Slate-900 (Fundo), Amber-500 (Destaque), Emerald-500 (Sucesso).
+- **UX:** Micro-interações rápidas e feedbacks visuais via Toasts.
+
+---
+
+## 🛠️ Tecnologias
+
+- **Frontend:** React + Vite + TypeScript
+- **Styling:** Tailwind CSS (Modern Patterns)
+- **Backend/DB:** Supabase (Auth, DB, Storage)
+- **Documentos:** jsPDF + autoTable
+
+---
+
+## 📂 Estrutura do Projeto
+
+```bash
+Golden-Equipamentos-Medicos/
+├── 📁 components/        # Componentes UI (GDS)
+│   ├── OrderForm.tsx     # O cérebro da criação
+│   ├── OrderList.tsx     # Lista inteligente e filtrada
+│   └── UserManagement.tsx # Painel de Administração
+├── 📁 services/          # Integrações (Supabase, LocalStorage)
+├── 📁 utils/             # Lógica de PDF e Conversão
+└── 📁 types/             # Definições TypeScript
+```
+
+---
+
+## 🚀 Como Rodar
+
+1. **Dependências:**
+
+   ```bash
+   npm install
+   ```
+
+2. **Configuração Supabase:**
+   Certifique-se de configurar o `.env.local` com suas credenciais.
+   > **Nota:** É necessário criar um bucket no Storage chamado `order-pdfs`.
+
+3. **Execução:**
+
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🛡️ Regras de Negócio
+
+1. **Admins:** Acesso total (Usuários, todos os pedidos, deletar).
+2. **Vendedores:** Criam pedidos e acessam apenas seu próprio histórico.
+3. **PDFs:** Somente pedidos salvos na nuvem geram arquivamento digital automático.
+
+---
+
+**Desenvolvido por:** Antigravity AI  
+**Para:** Golden Equipamentos Médicos
